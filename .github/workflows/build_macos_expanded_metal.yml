@@ -1,9 +1,7 @@
 name: Build macOS app (Expanded Metal)
 
 on:
-  push:
-    branches: [expanded-metal]
-  workflow_dispatch:
+  workflow_dispatch:   # run by hand from the Actions tab
 
 jobs:
   build:
