@@ -7,7 +7,7 @@ on:
 
 jobs:
   build:
-    runs-on: macos-14          # Apple Silicon, Xcode 15
+    runs-on: macos-latest      # Apple Silicon, current default image
     timeout-minutes: 340
     env:
       OSX_TARGET: "12.0"
@@ -17,6 +17,7 @@ jobs:
 
       - name: Tools
         run: |
+          sw_vers; xcodebuild -version
           brew install automake gettext libtool texinfo m4 || true
           curl -fsSL -o cmake.tgz "https://github.com/Kitware/CMake/releases/download/v${CMAKE_VER}/cmake-${CMAKE_VER}-macos-universal.tar.gz"
           tar xzf cmake.tgz
@@ -28,7 +29,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: deps/build/destdir
-          key: deps-macos14-arm64-${{ env.OSX_TARGET }}-${{ hashFiles('deps/**') }}
+          key: deps-macos-latest-${{ runner.arch }}-${{ env.OSX_TARGET }}-${{ hashFiles('deps/**') }}
 
       - name: Build dependencies
         if: steps.deps-cache.outputs.cache-hit != 'true'
