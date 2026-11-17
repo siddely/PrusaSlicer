@@ -1,0 +1,67 @@
+name: Build macOS app (Expanded Metal)
+
+on:
+  push:
+    branches: [expanded-metal]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-15          # Apple Silicon, Xcode 16
+    timeout-minutes: 340
+    env:
+      OSX_TARGET: "12.0"
+      CMAKE_VER: "3.27.9"      # Prusa's macOS notes recommend 3.27
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Tools
+        run: |
+          brew install automake gettext libtool texinfo m4 || true
+          curl -fsSL -o cmake.tgz "https://github.com/Kitware/CMake/releases/download/v${CMAKE_VER}/cmake-${CMAKE_VER}-macos-universal.tar.gz"
+          tar xzf cmake.tgz
+          echo "$PWD/cmake-${CMAKE_VER}-macos-universal/CMake.app/Contents/bin" >> "$GITHUB_PATH"
+          echo "$(brew --prefix m4)/bin" >> "$GITHUB_PATH"
+
+      - name: Restore dependencies cache
+        id: deps-cache
+        uses: actions/cache@v4
+        with:
+          path: deps/build/destdir
+          key: deps-macos15-arm64-${{ env.OSX_TARGET }}-${{ hashFiles('deps/**') }}
+
+      - name: Build dependencies
+        if: steps.deps-cache.outputs.cache-hit != 'true'
+        run: |
+          cmake --version
+          mkdir -p deps/build && cd deps/build
+          cmake .. -DCMAKE_OSX_DEPLOYMENT_TARGET=${OSX_TARGET}
+          make -j$(sysctl -n hw.ncpu)
+
+      - name: Build PrusaSlicer
+        run: |
+          mkdir -p build && cd build
+          cmake .. \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_OSX_DEPLOYMENT_TARGET=${OSX_TARGET} \
+            -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/deps/build/destdir/usr/local" \
+            -DSLIC3R_BUILD_TESTS=OFF
+          make -j$(sysctl -n hw.ncpu) PrusaSlicer
+
+      - name: Make app bundle
+        run: |
+          APP="PrusaSlicer ExpandedMetal.app"
+          mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
+          cp build/src/PrusaSlicer "$APP/Contents/MacOS/PrusaSlicer"
+          cp build/src/Info.plist "$APP/Contents/Info.plist"
+          cp -R resources/ "$APP/Contents/Resources/"
+          cp resources/icons/*.icns "$APP/Contents/Resources/"
+          otool -L "$APP/Contents/MacOS/PrusaSlicer"
+          codesign --force --deep --sign - "$APP"
+          ditto -c -k --sequesterRsrc --keepParent "$APP" PrusaSlicer-ExpandedMetal-macOS-arm64.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PrusaSlicer-ExpandedMetal-macOS-arm64
+          path: PrusaSlicer-ExpandedMetal-macOS-arm64.zip
+          retention-days: 30

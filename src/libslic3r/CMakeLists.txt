@@ -110,6 +110,8 @@ set(SLIC3R_SOURCES
     Fill/FillConcentric.hpp
     Fill/FillEnsuring.cpp
     Fill/FillEnsuring.hpp
+    Fill/FillExpandedMetal.cpp
+    Fill/FillExpandedMetal.hpp
     Fill/FillHoneycomb.cpp
     Fill/FillHoneycomb.hpp
     Fill/FillGyroid.cpp

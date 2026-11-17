@@ -28,6 +28,7 @@
 #include "FillConcentric.hpp"
 #include "FillHoneycomb.hpp"
 #include "Fill3DHoneycomb.hpp"
+#include "FillExpandedMetal.hpp"
 #include "FillGyroid.hpp"
 #include "FillPlanePath.hpp"
 #include "FillLine.hpp"
@@ -68,6 +69,7 @@ Fill* Fill::new_from_type(const InfillPattern type)
     case ipLightning:           return new FillLightning::Filler();
     case ipEnsuring:            return new FillEnsuring();
     case ipZigZag:              return new FillZigZag();
+    case ipExpandedMetal:       return new FillExpandedMetal();
     default: throw Slic3r::InvalidArgument("unknown type");
     }
 }
